@@ -14,9 +14,10 @@ NOLIB="buspirate_spi dummy linux_mtd linux_spi pony_spi serprog"
 USB="ch341a_spi ch347_spi dediprog developerbox_spi digilent_spi
 	dirtyjtag_spi ft2232_spi ft4222_spi jlink_spi pickit2_spi
 	stlinkv3_spi usbblaster_spi"
-PCI="atavia drkaiser gfxnvidia internal it8212 nic3com nicintel
-	nicintel_eeprom nicintel_spi nicrealtek ogp_spi satamv satasii"
-OFF="atahpt atapromise linux_gpio_spi mstarddc_spi nicnatsemi"
+INTERNAL="atahpt atapromise atavia drkaiser gfxnvidia internal it8212
+	nic3com nicintel nicintel_eeprom nicintel_spi nicnatsemi nicrealtek
+	ogp_spi rayer_spi satamv satasii"
+OFF="linux_gpio_spi mstarddc_spi"
 
 active_for() {
 	awk -v want="$1" '
@@ -162,16 +163,13 @@ full_present="$NOLIB $USB"
 full_absent="$OFF"
 full_libs="libftdi1 libjaylink libusb-1.0"
 spi_present="$NOLIB"
-spi_absent="$OFF $USB"
+spi_absent="$OFF $USB $INTERNAL"
 
 if [ "$x86" = y ]; then
-	full_present="$full_present $PCI rayer_spi"
+	full_present="$full_present $INTERNAL"
 	full_libs="$full_libs libpci"
-	spi_present="$spi_present rayer_spi"
-	spi_absent="$spi_absent $PCI"
 else
-	full_absent="$full_absent $PCI rayer_spi"
-	spi_absent="$spi_absent $PCI rayer_spi"
+	full_absent="$full_absent $INTERNAL"
 fi
 
 check_variant full flashprog "$full_present" "$full_absent" "$full_libs"
