@@ -92,6 +92,37 @@ deps=$(echo "$deps" | tr '\n' ' ')
 echo "depends: $deps"
 echo "size: $size"
 
+pkgsize() {
+	local f=$1
+	case $f in
+	*.ipk)
+		tar -xzOf "$f" ./data.tar.gz | tar -tvz \
+			| awk '$1 !~ /^d/ { s += $3 } END { print s + 0 }'
+		;;
+	*.apk)
+		sdk/staging_dir/host/bin/apk adbdump "$f" \
+			| awk '/^  installed-size:/ { print $2; exit }'
+		;;
+	esac
+}
+
+total=$size
+report=
+for d in $deps; do
+	[ "$d" = libc ] && continue
+	df=$(find sdk/bin -type f \( -name "$d-[0-9]*" -o -name "${d}_[0-9]*" \) \
+		| head -1)
+	if [ -z "$df" ]; then
+		report="$report $d=?"
+		continue
+	fi
+	ds=$(pkgsize "$df")
+	report="$report $d=$ds"
+	total=$((total + ds))
+done
+echo "libs:$report"
+echo "total: $total"
+
 if [ "$binary" != y ]; then
 	echo "FAIL  usr/bin/flashprog is not in the package"
 	fail=1
