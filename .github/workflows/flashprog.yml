@@ -98,5 +98,6 @@ jobs:
           fi
           docker run --rm \
             -v "$PWD/out:/pkgs:ro" \
+            -v "$PWD/overlay:/overlay:ro" \
             -v "$PWD/.github/scripts/flashprog-runtime.sh:/t.sh:ro" \
             "$img" sh /t.sh
