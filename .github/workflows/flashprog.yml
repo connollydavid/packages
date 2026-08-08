@@ -1,0 +1,102 @@
+name: flashprog
+
+on:
+  push:
+    branches:
+      - ci-flashprog
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flashprog
+  cancel-in-progress: false
+
+env:
+  PKG_REPO: https://github.com/connollydavid/packages.git
+  PKG_REF: flashprog
+
+jobs:
+  matrix:
+    name: Read the architecture map
+    runs-on: ubuntu-latest
+    outputs:
+      arches: ${{ steps.read.outputs.arches }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: read
+        run: |
+          json=$(awk -F'\t' '
+          /^#/ || NF < 2 { next }
+          { printf "%s\"%s\"", sep, $1; sep="," }' \
+            .github/scripts/flashprog-arch-map.tsv)
+          echo "arches=[$json]" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.arch }} ${{ matrix.release }}
+    needs: matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ${{ fromJSON(needs.matrix.outputs.arches) }}
+        release: [main, "25.12", "24.10"]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y zstd
+      - name: Build
+        run: .github/scripts/flashprog-build.sh "${{ matrix.release }}" "${{ matrix.arch }}" default
+      - name: Check
+        run: .github/scripts/flashprog-check.sh default "${{ matrix.arch }}"
+
+  minimal:
+    name: ${{ matrix.arch }} ${{ matrix.release }} minimal
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - aarch64_generic
+          - loongarch64_generic
+          - mips_24kc
+          - riscv64_generic
+          - x86_64
+        release: [main, "25.12", "24.10"]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y zstd
+      - name: Build
+        run: .github/scripts/flashprog-build.sh "${{ matrix.release }}" "${{ matrix.arch }}" minimal
+      - name: Check
+        run: .github/scripts/flashprog-check.sh minimal "${{ matrix.arch }}"
+
+  runtime:
+    name: Run on ${{ matrix.release }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        release: [main, "25.12", "24.10"]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y zstd
+      - name: Build
+        run: .github/scripts/flashprog-build.sh "${{ matrix.release }}" x86_64 default
+      - name: Check
+        run: .github/scripts/flashprog-check.sh default x86_64
+      - name: Install and run in a stock rootfs
+        run: |
+          mkdir out
+          find sdk/bin -name 'flashprog[-_]1.5*' -exec cp {} out/ \;
+          if [ "${{ matrix.release }}" = main ]; then
+            img=openwrt/rootfs:x86-64-master
+          else
+            img=openwrt/rootfs:x86-64-openwrt-${{ matrix.release }}
+          fi
+          docker run --rm \
+            -v "$PWD/out:/pkgs:ro" \
+            -v "$PWD/.github/scripts/flashprog-runtime.sh:/t.sh:ro" \
+            "$img" sh /t.sh
