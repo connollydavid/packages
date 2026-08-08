@@ -47,31 +47,9 @@ jobs:
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y zstd
       - name: Build
-        run: .github/scripts/flashprog-build.sh "${{ matrix.release }}" "${{ matrix.arch }}" default
+        run: .github/scripts/flashprog-build.sh "${{ matrix.release }}" "${{ matrix.arch }}"
       - name: Check
-        run: .github/scripts/flashprog-check.sh default "${{ matrix.arch }}"
-
-  minimal:
-    name: ${{ matrix.arch }} ${{ matrix.release }} minimal
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch:
-          - aarch64_generic
-          - loongarch64_generic
-          - mips_24kc
-          - riscv64_generic
-          - x86_64
-        release: [main, "25.12", "24.10"]
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install tools
-        run: sudo apt-get update && sudo apt-get install -y zstd
-      - name: Build
-        run: .github/scripts/flashprog-build.sh "${{ matrix.release }}" "${{ matrix.arch }}" minimal
-      - name: Check
-        run: .github/scripts/flashprog-check.sh minimal "${{ matrix.arch }}"
+        run: .github/scripts/flashprog-check.sh "${{ matrix.arch }}"
 
   runtime:
     name: Run on ${{ matrix.release }}
@@ -85,13 +63,13 @@ jobs:
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y zstd
       - name: Build
-        run: .github/scripts/flashprog-build.sh "${{ matrix.release }}" x86_64 default
+        run: .github/scripts/flashprog-build.sh "${{ matrix.release }}" x86_64
       - name: Check
-        run: .github/scripts/flashprog-check.sh default x86_64
+        run: .github/scripts/flashprog-check.sh x86_64
       - name: Install and run in a stock rootfs
         run: |
           mkdir out
-          find sdk/bin -name 'flashprog[-_]1.5*' -exec cp {} out/ \;
+          find sdk/bin -type f -name 'flashprog[-_]*' -exec cp {} out/ \;
           if [ "${{ matrix.release }}" = main ]; then
             img=openwrt/rootfs:x86-64-master
           else

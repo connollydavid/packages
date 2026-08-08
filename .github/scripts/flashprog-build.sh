@@ -3,7 +3,6 @@ set -eo pipefail
 
 release=$1
 arch=$2
-mode=$3
 
 map=$GITHUB_WORKSPACE/.github/scripts/flashprog-arch-map.tsv
 target=$(awk -F'\t' -v a="$arch" '$1 == a { print $2 }' "$map")
@@ -84,16 +83,11 @@ cat feeds.conf
 
 make defconfig > /dev/null
 echo "CONFIG_PACKAGE_flashprog=m" >> .config
-if [ "$mode" = minimal ]; then
-	for s in FTDI JLINK PCI USB; do
-		echo "# CONFIG_FLASHPROG_$s is not set" >> .config
-	done
-fi
 make defconfig > /dev/null
 if ! grep -q '^CONFIG_PACKAGE_flashprog=m' .config; then
 	echo "FAIL  defconfig dropped CONFIG_PACKAGE_flashprog"
 	exit 1
 fi
-grep -E '^(CONFIG_PACKAGE_flashprog|CONFIG_FLASHPROG_|# CONFIG_FLASHPROG_)' .config
+grep -E '^CONFIG_PACKAGE_flashprog' .config
 
 make package/flashprog/compile -j"$(nproc)" V=s 2>&1 | tee "$GITHUB_WORKSPACE/build.log"

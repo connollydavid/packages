@@ -1,8 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-mode=$1
-arch=$2
+arch=$1
 log=$GITHUB_WORKSPACE/build.log
 
 active=$(sed -n '/^ *active *:/,/^ *non active/p' "$log" \
@@ -36,42 +35,24 @@ lack() {
 	done
 }
 
-want buspirate_spi dummy linux_mtd linux_spi pony_spi serprog
+want buspirate_spi ch341a_spi ch347_spi dediprog developerbox_spi \
+	digilent_spi dirtyjtag_spi dummy ft2232_spi ft4222_spi jlink_spi \
+	linux_mtd linux_spi pickit2_spi pony_spi serprog stlinkv3_spi \
+	usbblaster_spi
 lack atahpt atapromise linux_gpio_spi mstarddc_spi nicnatsemi
+
+pci="atavia drkaiser gfxnvidia internal it8212 nic3com nicintel
+	nicintel_eeprom nicintel_spi nicrealtek ogp_spi rayer_spi satamv
+	satasii"
 
 case $arch in
 i386_*|x86_64)
-	want rayer_spi
+	want $pci
 	;;
 *)
-	lack rayer_spi
+	lack $pci
 	;;
 esac
-
-if [ "$mode" = minimal ]; then
-	lack atavia ch341a_spi dediprog ft2232_spi ft4222_spi internal \
-		jlink_spi satasii stlinkv3_spi usbblaster_spi
-else
-	want atavia ch341a_spi ch347_spi dediprog developerbox_spi \
-		digilent_spi dirtyjtag_spi ft2232_spi ft4222_spi jlink_spi \
-		pickit2_spi stlinkv3_spi usbblaster_spi
-	case $arch in
-	riscv64_*|loongarch64_*)
-		lack drkaiser gfxnvidia internal it8212 nicintel \
-			nicintel_eeprom nicintel_spi ogp_spi satasii
-		;;
-	i386_*|x86_64)
-		want drkaiser gfxnvidia internal it8212 nic3com nicintel \
-			nicintel_eeprom nicintel_spi nicrealtek ogp_spi \
-			satamv satasii
-		;;
-	*)
-		want drkaiser gfxnvidia internal it8212 nicintel \
-			nicintel_eeprom nicintel_spi ogp_spi satasii
-		lack nic3com nicrealtek satamv
-		;;
-	esac
-fi
 
 pkg=$(find sdk/bin -type f -name 'flashprog[-_]*' | head -1)
 if [ -z "$pkg" ]; then
@@ -108,19 +89,34 @@ if [ "$binary" != y ]; then
 	fail=1
 fi
 
-for d in libftdi1 libjaylink libpci; do
+for d in libftdi1 libjaylink libusb-1.0; do
 	case " $deps " in
-	*" $d "*) has=y ;;
-	*) has=n ;;
+	*" $d "*|*" $d-0 "*) ;;
+	*)
+		echo "FAIL  $d is not a dependency"
+		fail=1
+		;;
 	esac
-	if [ "$mode" = minimal ] && [ "$has" = y ]; then
-		echo "FAIL  $d is a dependency of the minimal build"
-		fail=1
-	fi
-	if [ "$mode" != minimal ] && [ "$has" = n ]; then
-		echo "FAIL  $d is not a dependency of the default build"
-		fail=1
-	fi
 done
+
+case " $deps " in
+*" libpci "*) haspci=y ;;
+*) haspci=n ;;
+esac
+
+case $arch in
+i386_*|x86_64)
+	if [ "$haspci" = n ]; then
+		echo "FAIL  libpci is not a dependency on $arch"
+		fail=1
+	fi
+	;;
+*)
+	if [ "$haspci" = y ]; then
+		echo "FAIL  libpci is a dependency on $arch"
+		fail=1
+	fi
+	;;
+esac
 
 exit $fail
