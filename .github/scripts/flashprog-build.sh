@@ -42,13 +42,14 @@ for attempt in 1 2 3; do
 		exit 1
 	fi
 	wget -qO sdk.tar.zst "$base/$sdk"
+	wget -qO sha256sums "$base/sha256sums"
 	want=$(grep " \*\?$sdk\$" sha256sums | awk '{print $1}')
 	got=$(sha256sum sdk.tar.zst | awk '{print $1}')
 	if [ -n "$want" ] && [ "$want" = "$got" ]; then
 		matched=y
 		break
 	fi
-	echo "note    attempt $attempt saw $sdk change between the sums and the download"
+	echo "note    attempt $attempt read sums that no longer match $sdk"
 	echo "        recorded $want"
 	echo "        got      $got"
 	sleep 30
