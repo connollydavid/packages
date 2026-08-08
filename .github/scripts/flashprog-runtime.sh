@@ -5,7 +5,16 @@ mkdir -p /var/lock
 if command -v apk > /dev/null; then
 	apk add --allow-untrusted /pkgs/flashprog-*.apk
 else
-	opkg update
+	opkg update || echo "note    one or more feeds did not update"
+	deps=$(opkg info /pkgs/flashprog_*.ipk \
+		| sed -n 's/^Depends: //p' | tr -d ' ' | tr ',' ' ')
+	echo "declared: $deps"
+	for d in $deps; do
+		if [ "$d" != libc ] && ! opkg list "$d" | grep -q .; then
+			echo "FAIL  $d is not in the feed"
+			exit 1
+		fi
+	done
 	opkg install /pkgs/flashprog_*.ipk
 fi
 

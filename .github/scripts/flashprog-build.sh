@@ -31,23 +31,31 @@ else
 	base="$idx/$ver/targets/$target"
 fi
 
-if ! wget -qO sha256sums "$base/sha256sums"; then
-	echo "FAIL  $target has no SDK in $release ($base)"
-	exit 1
-fi
-sdk=$(grep -oE 'openwrt-sdk[^*]+\.tar\.zst' sha256sums | head -1)
-if [ -z "$sdk" ]; then
-	echo "FAIL  no SDK listed for $target in $release"
-	exit 1
-fi
-
-wget -qO sdk.tar.zst "$base/$sdk"
-want=$(grep " \*\?$sdk\$" sha256sums | awk '{print $1}')
-got=$(sha256sum sdk.tar.zst | awk '{print $1}')
-if [ -z "$want" ] || [ "$want" != "$got" ]; then
+matched=
+for attempt in 1 2 3; do
+	if ! wget -qO sha256sums "$base/sha256sums"; then
+		echo "FAIL  $target has no SDK in $release ($base)"
+		exit 1
+	fi
+	sdk=$(grep -oE 'openwrt-sdk[^*]+\.tar\.zst' sha256sums | head -1)
+	if [ -z "$sdk" ]; then
+		echo "FAIL  no SDK listed for $target in $release"
+		exit 1
+	fi
+	wget -qO sdk.tar.zst "$base/$sdk"
+	want=$(grep " \*\?$sdk\$" sha256sums | awk '{print $1}')
+	got=$(sha256sum sdk.tar.zst | awk '{print $1}')
+	if [ -n "$want" ] && [ "$want" = "$got" ]; then
+		matched=y
+		break
+	fi
+	echo "note    attempt $attempt saw $sdk change between the sums and the download"
+	echo "        recorded $want"
+	echo "        got      $got"
+	sleep 30
+done
+if [ -z "$matched" ]; then
 	echo "FAIL  SDK checksum mismatch for $sdk"
-	echo "      recorded $want"
-	echo "      got      $got"
 	exit 1
 fi
 echo "ok      sha256 $got  $sdk"
