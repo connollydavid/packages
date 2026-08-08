@@ -65,6 +65,8 @@ case $pkg in
 *.ipk)
 	meta=$(tar -xzOf "$pkg" ./control.tar.gz | tar -xzO ./control)
 	deps=$(echo "$meta" | sed -n 's/^Depends: //p' | tr -d ' ' | tr ',' ' ')
+	size=$(tar -xzOf "$pkg" ./data.tar.gz | tar -tvz \
+		| awk '$NF == "./usr/bin/flashprog" { print $3 }')
 	if tar -xzOf "$pkg" ./data.tar.gz | tar -tz | grep -q '^\./usr/bin/flashprog$'; then
 		binary=y
 	fi
@@ -72,6 +74,11 @@ case $pkg in
 *.apk)
 	meta=$(sdk/staging_dir/host/bin/apk adbdump "$pkg")
 	deps=$(echo "$meta" | sed -n '/^  depends:/,/^  [a-z]/p' | sed -n 's/^ *- //p')
+	size=$(echo "$meta" | awk '
+		/^  - name: usr\/bin$/ { f = 1; next }
+		/^  - name: / { f = 0 }
+		f && /^      - name: flashprog$/ { g = 1; next }
+		g && /^ *size: / { print $2; exit }')
 	if echo "$meta" | awk '
 		/^  - name: usr\/bin$/ { f = 1; next }
 		/^  - name: / { f = 0 }
@@ -83,6 +90,7 @@ case $pkg in
 esac
 deps=$(echo "$deps" | tr '\n' ' ')
 echo "depends: $deps"
+echo "size: $size"
 
 if [ "$binary" != y ]; then
 	echo "FAIL  usr/bin/flashprog is not in the package"
