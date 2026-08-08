@@ -59,7 +59,7 @@ pkgsize() {
 }
 
 check_variant() {
-	local variant=$1 pkg=$2 present=$3 absent=$4 wantlibs=$5
+	local variant=$1 pkg=$2 bin=$3 present=$4 absent=$5 wantlibs=$6
 	local active p
 
 	active=$(active_for "$variant")
@@ -110,7 +110,7 @@ check_variant() {
 	case $f in
 	*.ipk)
 		if tar -xzOf "$f" ./data.tar.gz | tar -tz \
-			| grep -qx '\./usr/bin/flashprog'; then
+			| grep -qx "\./usr/bin/$bin"; then
 			binary=y
 		fi
 		;;
@@ -118,14 +118,14 @@ check_variant() {
 		if echo "$meta" | awk '
 			/^  - name: usr\/bin$/ { f = 1; next }
 			/^  - name: / { f = 0 }
-			f && /^      - name: flashprog$/ { found = 1 }
+			f && $0 == "      - name: " bin { found = 1 }
 			END { exit !found }'; then
 			binary=y
 		fi
 		;;
 	esac
 	if [ "$binary" != y ]; then
-		echo "FAIL  $pkg: /usr/bin/flashprog is not in the package"
+		echo "FAIL  $pkg: /usr/bin/$bin is not in the package"
 		fail=1
 	fi
 
@@ -172,7 +172,7 @@ else
 	full_absent="$full_absent $INTERNAL"
 fi
 
-check_variant full flashprog "$full_present" "$full_absent" "$full_libs"
-check_variant spi flashprog-spi "$spi_present" "$spi_absent" ""
+check_variant full flashprog flashprog "$full_present" "$full_absent" "$full_libs"
+check_variant spi flashprog-spi flashprog-spi "$spi_present" "$spi_absent" ""
 
 exit $fail
