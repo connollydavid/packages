@@ -105,8 +105,26 @@ check_variant() {
 	esac
 	echo "$pkg: $(basename "$f")  size $size  depends: $deps"
 
-	if ! echo "$meta" | grep -q 'usr/bin'; then
-		echo "FAIL  $pkg: nothing installed under usr/bin"
+	local binary=n
+	case $f in
+	*.ipk)
+		if tar -xzOf "$f" ./data.tar.gz | tar -tz \
+			| grep -qx '\./usr/bin/flashprog'; then
+			binary=y
+		fi
+		;;
+	*.apk)
+		if echo "$meta" | awk '
+			/^  - name: usr\/bin$/ { f = 1; next }
+			/^  - name: / { f = 0 }
+			f && /^      - name: flashprog$/ { found = 1 }
+			END { exit !found }'; then
+			binary=y
+		fi
+		;;
+	esac
+	if [ "$binary" != y ]; then
+		echo "FAIL  $pkg: /usr/bin/flashprog is not in the package"
 		fail=1
 	fi
 

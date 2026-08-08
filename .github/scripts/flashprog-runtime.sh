@@ -27,7 +27,7 @@ else
 	full=$(ls /pkgs/flashprog_[0-9]*.ipk)
 	spi=$(ls /pkgs/flashprog-spi_[0-9]*.ipk)
 	opkg update || echo "note    one or more feeds did not update"
-	meta=$(opkg info "$full")
+	meta=$(tar -xzOf "$full" ./control.tar.gz | tar -xzO ./control)
 	ver=$(echo "$meta" | sed -n 's/^Version: //p')
 	deps=$(echo "$meta" | sed -n 's/^Depends: //p' | tr -d ' ' | tr ',' ' ')
 	echo "declared: $deps"
@@ -39,6 +39,10 @@ else
 	done
 fi
 ver=${ver%-r*}
+if [ -z "$ver" ]; then
+	echo "FAIL  could not read the package version"
+	exit 1
+fi
 
 install_pkg "$full"
 echo "installed: flashprog $ver"
