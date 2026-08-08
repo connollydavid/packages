@@ -79,15 +79,19 @@ echo "src-link flashprog $GITHUB_WORKSPACE/overlay" >> feeds.conf
 cat feeds.conf
 
 ./scripts/feeds update -a
-./scripts/feeds install flashprog
+./scripts/feeds install flashprog flashprog-spi
 
 make defconfig > /dev/null
-echo "CONFIG_PACKAGE_flashprog=m" >> .config
+for p in flashprog flashprog-spi; do
+	echo "CONFIG_PACKAGE_$p=m" >> .config
+done
 make defconfig > /dev/null
-if ! grep -q '^CONFIG_PACKAGE_flashprog=m' .config; then
-	echo "FAIL  defconfig dropped CONFIG_PACKAGE_flashprog"
-	exit 1
-fi
+for p in flashprog flashprog-spi; do
+	if ! grep -q "^CONFIG_PACKAGE_$p=m" .config; then
+		echo "FAIL  defconfig dropped CONFIG_PACKAGE_$p"
+		exit 1
+	fi
+done
 grep -E '^CONFIG_PACKAGE_flashprog' .config
 
 make package/flashprog/compile -j"$(nproc)" V=s 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
