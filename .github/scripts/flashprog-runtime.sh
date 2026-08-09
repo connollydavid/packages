@@ -11,21 +11,17 @@ install_pkg() {
 	fi
 }
 
-remove_pkg() {
-	if command -v apk > /dev/null; then
-		apk del "$1"
-	else
-		opkg remove "$1"
-	fi
-}
-
 if command -v apk > /dev/null; then
 	full=$(ls /pkgs/flashprog-[0-9]*.apk)
+	pci=$(ls /pkgs/flashprog-pci-[0-9]*.apk)
 	spi=$(ls /pkgs/flashprog-spi-[0-9]*.apk)
+	usb=$(ls /pkgs/flashprog-usb-[0-9]*.apk)
 	ver=$(apk adbdump "$full" | sed -n 's/^  version: //p')
 else
 	full=$(ls /pkgs/flashprog_[0-9]*.ipk)
+	pci=$(ls /pkgs/flashprog-pci_[0-9]*.ipk)
 	spi=$(ls /pkgs/flashprog-spi_[0-9]*.ipk)
+	usb=$(ls /pkgs/flashprog-usb_[0-9]*.ipk)
 	opkg update || echo "note    one or more feeds did not update"
 	meta=$(tar -xzOf "$full" ./control.tar.gz | tar -xzO ./control)
 	ver=$(echo "$meta" | sed -n 's/^Version: //p')
@@ -44,11 +40,13 @@ if [ -z "$ver" ]; then
 	exit 1
 fi
 
-install_pkg "$full"
-install_pkg "$spi"
-echo "installed: flashprog $ver, both variants"
-flashprog --version | head -1
-flashprog-spi --version | head -1
+for p in "$full" "$pci" "$usb" "$spi"; do
+	install_pkg "$p"
+done
+echo "installed: flashprog $ver, all four variants together"
+for b in flashprog flashprog-pci flashprog-usb flashprog-spi; do
+	"$b" --version | head -1
+done
 
 chip=dummy:emulate=W25Q128FV,image=/tmp/chip.rom
 dd if=/dev/urandom of=/tmp/in.bin bs=1M count=16
@@ -59,14 +57,25 @@ cmp /tmp/in.bin /tmp/out.bin
 echo "roundtrip: identical"
 flashprog -p "$chip" -E | tail -1
 
-for p in flashprog flashprog-spi; do
+for p in flashprog flashprog-pci flashprog-usb flashprog-spi; do
 	sh /overlay/utils/flashprog/test.sh "$p" "$ver"
 	echo "test.sh: pass for $p"
 done
 
-if flashprog-spi -p ch341a_spi 2>&1 | grep -q "Unknown programmer"; then
-	echo "ok    flashprog-spi carries no USB programmer"
-else
-	echo "FAIL  flashprog-spi carries a USB programmer"
-	exit 1
-fi
+for p in flashprog-spi flashprog-pci; do
+	if "$p" -p ch341a_spi 2>&1 | grep "Unknown programmer"; then
+		echo "ok    $p carries no USB programmer"
+	else
+		echo "FAIL  $p carries a USB programmer"
+		exit 1
+	fi
+done
+
+for p in flashprog-spi flashprog-usb; do
+	if "$p" -p internal 2>&1 | grep "Unknown programmer"; then
+		echo "ok    $p carries no internal programmer"
+	else
+		echo "FAIL  $p carries the internal programmer"
+		exit 1
+	fi
+done
