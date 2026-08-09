@@ -22,10 +22,10 @@ loongarch64_*) fam=loongarch64 ;;
 	;;
 esac
 
-BASE="dummy linux_mtd linux_spi"
+BASE="dummy linux_mtd linux_spi mstarddc_spi"
 EXT="buspirate_spi ch341a_spi ch347_spi dediprog developerbox_spi digilent_spi
-	dirtyjtag_spi ft2232_spi ft4222_spi jlink_spi linux_gpio_spi mstarddc_spi
-	pickit2_spi pony_spi serprog stlinkv3_spi usbblaster_spi"
+	dirtyjtag_spi ft2232_spi ft4222_spi jlink_spi linux_gpio_spi pickit2_spi
+	pony_spi serprog stlinkv3_spi usbblaster_spi"
 PCI_ANY="atavia"
 PCI_RAW="drkaiser gfxnvidia internal it8212 nicintel nicintel_eeprom
 	nicintel_spi ogp_spi satasii"
@@ -51,7 +51,7 @@ echo "architecture $arch maps to cpu family $fam"
 
 active_for() {
 	awk -v want="$1" '
-		match($0, /flashprog-(full|pci|spi|usb)\//) {
+		match($0, /flashprog-(full|pci|spi|external)\//) {
 			v = substr($0, RSTART + 10, RLENGTH - 11)
 		}
 		v == want && /^ *active +:/ { f = 1 }
@@ -190,7 +190,7 @@ check_variant full flashprog flashprog \
 check_variant pci flashprog-pci flashprog-pci \
 	"$BASE $PCI" "$OFF $EXT $PCI_ABSENT" \
 	"libpci"
-check_variant usb flashprog-usb flashprog-usb \
+check_variant external flashprog-external flashprog-external \
 	"$BASE $EXT" "$OFF $PCI_ANY $PCI_RAW $PCI_PORT" \
 	"libftdi1 libgpiod libjaylink libusb-1.0"
 check_variant spi flashprog-spi flashprog-spi \

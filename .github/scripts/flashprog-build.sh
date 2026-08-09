@@ -80,14 +80,14 @@ echo "src-link flashprog $GITHUB_WORKSPACE/overlay" >> feeds.conf
 cat feeds.conf
 
 ./scripts/feeds update -a
-./scripts/feeds install flashprog flashprog-pci flashprog-spi flashprog-usb
+./scripts/feeds install flashprog flashprog-external flashprog-pci flashprog-spi
 
 make defconfig > /dev/null
-for p in flashprog flashprog-pci flashprog-spi flashprog-usb; do
+for p in flashprog flashprog-external flashprog-pci flashprog-spi; do
 	echo "CONFIG_PACKAGE_$p=m" >> .config
 done
 make defconfig > /dev/null
-for p in flashprog flashprog-pci flashprog-spi flashprog-usb; do
+for p in flashprog flashprog-external flashprog-pci flashprog-spi; do
 	if ! grep -q "^CONFIG_PACKAGE_$p=m" .config; then
 		echo "FAIL  defconfig dropped CONFIG_PACKAGE_$p"
 		exit 1
