@@ -115,7 +115,7 @@ check_variant() {
 		fi
 		;;
 	*.apk)
-		if echo "$meta" | awk '
+		if echo "$meta" | awk -v bin="$bin" '
 			/^  - name: usr\/bin$/ { f = 1; next }
 			/^  - name: / { f = 0 }
 			f && $0 == "      - name: " bin { found = 1 }
