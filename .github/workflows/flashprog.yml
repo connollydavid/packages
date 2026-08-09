@@ -41,7 +41,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: ${{ fromJSON(needs.matrix.outputs.arches) }}
-        release: [main, "25.12", "24.10"]
+        release: [main, "25.12"]
     steps:
       - uses: actions/checkout@v7
       - name: Install tools
@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: [main, "25.12", "24.10"]
+        release: [main, "25.12"]
     steps:
       - uses: actions/checkout@v7
       - name: Install tools

@@ -3,37 +3,12 @@ set -e
 
 mkdir -p /var/lock
 
-install_pkg() {
-	if command -v apk > /dev/null; then
-		apk add --allow-untrusted "$1"
-	else
-		opkg install "$1"
-	fi
-}
+full=$(ls /pkgs/flashprog-[0-9]*.apk)
+pci=$(ls /pkgs/flashprog-pci-[0-9]*.apk)
+spi=$(ls /pkgs/flashprog-spi-[0-9]*.apk)
+ext=$(ls /pkgs/flashprog-external-[0-9]*.apk)
 
-if command -v apk > /dev/null; then
-	full=$(ls /pkgs/flashprog-[0-9]*.apk)
-	pci=$(ls /pkgs/flashprog-pci-[0-9]*.apk)
-	spi=$(ls /pkgs/flashprog-spi-[0-9]*.apk)
-	ext=$(ls /pkgs/flashprog-external-[0-9]*.apk)
-	ver=$(apk adbdump "$full" | sed -n 's/^  version: //p')
-else
-	full=$(ls /pkgs/flashprog_[0-9]*.ipk)
-	pci=$(ls /pkgs/flashprog-pci_[0-9]*.ipk)
-	spi=$(ls /pkgs/flashprog-spi_[0-9]*.ipk)
-	ext=$(ls /pkgs/flashprog-external_[0-9]*.ipk)
-	opkg update || echo "note    one or more feeds did not update"
-	meta=$(tar -xzOf "$full" ./control.tar.gz | tar -xzO ./control)
-	ver=$(echo "$meta" | sed -n 's/^Version: //p')
-	deps=$(echo "$meta" | sed -n 's/^Depends: //p' | tr -d ' ' | tr ',' ' ')
-	echo "declared: $deps"
-	for d in $deps; do
-		if [ "$d" != libc ] && ! opkg list "$d" | grep -q .; then
-			echo "FAIL  $d is not in the feed"
-			exit 1
-		fi
-	done
-fi
+ver=$(apk adbdump "$full" | sed -n 's/^  version: //p')
 ver=${ver%-r*}
 if [ -z "$ver" ]; then
 	echo "FAIL  could not read the package version"
@@ -41,7 +16,7 @@ if [ -z "$ver" ]; then
 fi
 
 for p in "$full" "$pci" "$ext" "$spi"; do
-	install_pkg "$p"
+	apk add --allow-untrusted "$p"
 done
 echo "installed: flashprog $ver, all four variants together"
 for b in flashprog flashprog-pci flashprog-external flashprog-spi; do

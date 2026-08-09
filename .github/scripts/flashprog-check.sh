@@ -65,23 +65,12 @@ active_for() {
 }
 
 pkgmeta() {
-	case $1 in
-	*.ipk) tar -xzOf "$1" ./control.tar.gz | tar -xzO ./control ;;
-	*.apk) sdk/staging_dir/host/bin/apk adbdump "$1" ;;
-	esac
+	sdk/staging_dir/host/bin/apk adbdump "$1"
 }
 
 pkgsize() {
-	case $1 in
-	*.ipk)
-		tar -xzOf "$1" ./data.tar.gz | tar -tvz \
-			| awk '$1 !~ /^d/ { s += $3 } END { print s + 0 }'
-		;;
-	*.apk)
-		sdk/staging_dir/host/bin/apk adbdump "$1" \
-			| awk '/^  installed-size:/ { print $2; exit }'
-		;;
-	esac
+	sdk/staging_dir/host/bin/apk adbdump "$1" \
+		| awk '/^  installed-size:/ { print $2; exit }'
 }
 
 check_variant() {
@@ -110,8 +99,7 @@ check_variant() {
 	done
 
 	local f
-	f=$(find sdk/bin -type f \
-		\( -name "$pkg-[0-9]*" -o -name "${pkg}_[0-9]*" \) | head -1)
+	f=$(find sdk/bin -type f -name "$pkg-[0-9]*.apk" | head -1)
 	if [ -z "$f" ]; then
 		echo "FAIL  $pkg: no package was produced"
 		fail=1
@@ -121,36 +109,15 @@ check_variant() {
 	local meta deps size
 	meta=$(pkgmeta "$f")
 	size=$(pkgsize "$f")
-	case $f in
-	*.ipk)
-		deps=$(echo "$meta" | sed -n 's/^Depends: //p' | tr -d ' ' | tr ',' ' ')
-		;;
-	*.apk)
-		deps=$(echo "$meta" | sed -n '/^  depends:/,/^  [a-z]/p' \
-			| sed -n 's/^ *- //p' | tr '\n' ' ')
-		;;
-	esac
+	deps=$(echo "$meta" | sed -n '/^  depends:/,/^  [a-z]/p' \
+		| sed -n 's/^ *- //p' | tr '\n' ' ')
 	echo "$pkg: $(basename "$f")  size $size  depends: $deps"
 
-	local binary=n
-	case $f in
-	*.ipk)
-		if tar -xzOf "$f" ./data.tar.gz | tar -tz \
-			| grep -qx "\./usr/bin/$bin"; then
-			binary=y
-		fi
-		;;
-	*.apk)
-		if echo "$meta" | awk -v bin="$bin" '
-			/^  - name: usr\/bin$/ { f = 1; next }
-			/^  - name: / { f = 0 }
-			f && $0 == "      - name: " bin { found = 1 }
-			END { exit !found }'; then
-			binary=y
-		fi
-		;;
-	esac
-	if [ "$binary" != y ]; then
+	if ! echo "$meta" | awk -v bin="$bin" '
+		/^  - name: usr\/bin$/ { f = 1; next }
+		/^  - name: / { f = 0 }
+		f && $0 == "      - name: " bin { found = 1 }
+		END { exit !found }'; then
 		echo "FAIL  $pkg: /usr/bin/$bin is not in the package"
 		fail=1
 	fi
@@ -174,8 +141,7 @@ check_variant() {
 			fail=1
 			;;
 		esac
-		df=$(find sdk/bin -type f \
-			\( -name "$d-[0-9]*" -o -name "${d}_[0-9]*" \) | head -1)
+		df=$(find sdk/bin -type f -name "$d-[0-9]*.apk" | head -1)
 		[ -z "$df" ] && continue
 		ds=$(pkgsize "$df")
 		total=$((total + ds))
