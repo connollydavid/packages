@@ -93,6 +93,14 @@ for p in flashprog flashprog-pci flashprog-spi flashprog-usb; do
 		exit 1
 	fi
 done
+for p in python3-gpiod python3-gpiod-src libgpiodcxx gpiod-tools; do
+	sed -i "s/^CONFIG_PACKAGE_$p=m\$/# CONFIG_PACKAGE_$p is not set/" .config
+	if grep -q "^CONFIG_PACKAGE_$p=m" .config; then
+		echo "FAIL  could not deselect $p"
+		exit 1
+	fi
+done
+
 grep -E '^CONFIG_PACKAGE_flashprog' .config
 
 make package/flashprog/compile -j"$(nproc)" V=s 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
