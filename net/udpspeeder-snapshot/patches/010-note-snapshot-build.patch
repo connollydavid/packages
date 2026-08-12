@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Connolly <david@connol.ly>
+Date: Mon, 1 Jan 2026 00:00:00 +0000
+Subject: [PATCH] name the package and version in the banner
+
+---
+--- a/main.cpp
++++ b/main.cpp
+@@ -13,14 +13,26 @@
+ #include "git_version.h"
+ using namespace std;
+ 
++#ifndef PROGRAM_NAME
++#define PROGRAM_NAME "UDPspeeder"
++#endif
++
++#ifndef PROGRAM_VERSION
++#define PROGRAM_VERSION "V2"
++#endif
++
+ static void print_help() {
+     char git_version_buf[100] = {0};
+     strncpy(git_version_buf, gitversion, 10);
+ 
+-    printf("UDPspeeder V2\n");
++    printf("%s %s\n", PROGRAM_NAME, PROGRAM_VERSION);
+     printf("git version: %s    ", git_version_buf);
+     printf("build date: %s %s\n", __DATE__, __TIME__);
+     printf("repository: https://github.com/wangyu-/UDPspeeder\n");
++#ifdef SOURCE_COMMIT
++    printf("source commit: %s\n", SOURCE_COMMIT);
++#endif
++    printf("unofficial snapshot build: https://connollydavid.github.io/UDPspeeder-simd/feed/\n");
+     printf("\n");
+     printf("usage:\n");
+     printf("    run as client: ./this_program -c -l local_listen_ip:local_port -r server_ip:server_port  [options]\n");

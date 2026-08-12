@@ -1,0 +1,16 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Connolly <david@connol.ly>
+Date: Mon, 1 Jan 2026 00:00:00 +0000
+Subject: [PATCH] note the snapshot build in the banner
+
+---
+--- a/main.cpp
++++ b/main.cpp
+@@ -33,6 +33,7 @@
+ #ifdef SOURCE_COMMIT
+     printf("source commit: %s\n", SOURCE_COMMIT);
+ #endif
++    printf("unofficial snapshot build: https://connollydavid.github.io/UDPspeeder-simd/feed/\n");
+     printf("\n");
+     printf("usage:\n");
+     printf("    run as client: ./this_program -c -l local_listen_ip:local_port -r server_ip:server_port  [options]\n");
