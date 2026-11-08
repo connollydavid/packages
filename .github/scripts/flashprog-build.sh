@@ -41,7 +41,7 @@ for attempt in 1 2 3; do
 		echo "FAIL  no SDK listed for $target in $release"
 		exit 1
 	fi
-	wget -qO sdk.tar.zst "$base/$sdk"
+	wget -q -c -t 3 --waitretry 10 -O sdk.tar.zst "$base/$sdk"
 	wget -qO sha256sums "$base/sha256sums"
 	want=$(grep " \*\?$sdk\$" sha256sums | awk '{print $1}')
 	got=$(sha256sum sdk.tar.zst | awk '{print $1}')
