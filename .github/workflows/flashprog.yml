@@ -75,8 +75,10 @@ jobs:
           else
             img=openwrt/rootfs:x86-64-openwrt-${{ matrix.release }}
           fi
-          docker run --rm \
-            -v "$PWD/out:/pkgs:ro" \
-            -v "$PWD/overlay:/overlay:ro" \
-            -v "$PWD/.github/scripts/flashprog-runtime.sh:/t.sh:ro" \
-            "$img" sh /t.sh
+          for v in flashprog flashprog-external flashprog-pci flashprog-spi; do
+            docker run --rm \
+              -v "$PWD/out:/pkgs:ro" \
+              -v "$PWD/overlay:/overlay:ro" \
+              -v "$PWD/.github/scripts/flashprog-runtime.sh:/t.sh:ro" \
+              "$img" sh /t.sh "$v"
+          done

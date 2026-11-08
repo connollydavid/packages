@@ -153,13 +153,13 @@ check_variant() {
 check_variant full flashprog flashprog \
 	"$BASE $EXT $PCI" "$OFF $PCI_ABSENT" \
 	"libftdi1 libgpiod libjaylink libpci libusb-1.0"
-check_variant external flashprog-external flashprog-external \
+check_variant external flashprog-external flashprog \
 	"$BASE $EXT" "$OFF $PCI_ANY $PCI_RAW $PCI_PORT" \
 	"libftdi1 libgpiod libjaylink libusb-1.0"
-check_variant pci flashprog-pci flashprog-pci \
+check_variant pci flashprog-pci flashprog \
 	"$BASE $PCI" "$OFF $EXT $PCI_ABSENT" \
 	"libpci"
-check_variant spi flashprog-spi flashprog-spi \
+check_variant spi flashprog-spi flashprog \
 	"$BASE" "$OFF $EXT $PCI_ANY $PCI_RAW $PCI_PORT" \
 	""
 

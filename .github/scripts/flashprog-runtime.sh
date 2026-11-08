@@ -1,56 +1,44 @@
 #!/bin/sh
+# Runtime check for one variant, $1. Installs only that variant into the
+# stock rootfs, exercises the shared /usr/bin/flashprog command through the
+# package's own test.sh, then asserts that every other variant refuses to
+# install beside it: they all own the same command and provide the same
+# flashprog-bin name, so a second install is a conflict by design.
 set -e
 
+me=$1
 mkdir -p /var/lock
 
-full=$(ls /pkgs/flashprog-[0-9]*.apk)
-ext=$(ls /pkgs/flashprog-external-[0-9]*.apk)
-pci=$(ls /pkgs/flashprog-pci-[0-9]*.apk)
-spi=$(ls /pkgs/flashprog-spi-[0-9]*.apk)
-
-ver=$(apk adbdump "$full" | sed -n 's/^  version: //p')
+myapk=$(ls /pkgs/${me}-[0-9]*.apk)
+ver=$(apk adbdump "$myapk" | sed -n 's/^  version: //p' | head -1)
 ver=${ver%-r*}
 if [ -z "$ver" ]; then
 	echo "FAIL  could not read the package version"
 	exit 1
 fi
 
-for p in "$full" "$ext" "$pci" "$spi"; do
-	apk add --allow-untrusted "$p"
-done
-echo "installed: flashprog $ver, all four variants together"
-for b in flashprog flashprog-external flashprog-pci flashprog-spi; do
-	"$b" --version | head -1
-done
+apk add --allow-untrusted "$myapk"
+command -v flashprog > /dev/null || {
+	echo "FAIL  /usr/bin/flashprog is not on PATH after installing $me"
+	exit 1
+}
+flashprog --version | head -1
 
-chip=dummy:emulate=W25Q128FV,image=/tmp/chip.rom
-dd if=/dev/urandom of=/tmp/in.bin bs=1M count=16
-flashprog -p "$chip" -w /tmp/in.bin | tail -2
-flashprog -p "$chip" -v /tmp/in.bin | tail -1
-flashprog -p "$chip" -r /tmp/out.bin | tail -1
-cmp /tmp/in.bin /tmp/out.bin
-echo "roundtrip: identical"
-flashprog -p "$chip" -E | tail -1
+sh /overlay/utils/flashprog/test.sh "$me" "$ver"
+echo "test.sh: pass for $me"
 
-for p in flashprog flashprog-external flashprog-pci flashprog-spi; do
-	sh /overlay/utils/flashprog/test.sh "$p" "$ver"
-	echo "test.sh: pass for $p"
-done
-
-for p in flashprog-pci flashprog-spi; do
-	if "$p" -p ch341a_spi 2>&1 | grep "Unknown programmer"; then
-		echo "ok    $p carries no USB programmer"
-	else
-		echo "FAIL  $p carries a USB programmer"
+for other in flashprog flashprog-external flashprog-pci flashprog-spi; do
+	[ "$other" = "$me" ] && continue
+	oapk=$(ls /pkgs/${other}-[0-9]*.apk)
+	out=$(apk add --allow-untrusted "$oapk" 2>&1) && {
+		echo "FAIL  $other installed beside $me"
 		exit 1
-	fi
-done
-
-for p in flashprog-external flashprog-spi; do
-	if "$p" -p internal 2>&1 | grep "Unknown programmer"; then
-		echo "ok    $p carries no internal programmer"
-	else
-		echo "FAIL  $p carries the internal programmer"
+	}
+	echo "$out" | grep -qiE 'conflict|same package name|provides' || {
+		echo "FAIL  $other failed to install beside $me for a non-conflict reason:"
+		echo "$out"
 		exit 1
-	fi
+	}
+	echo "ok    $other refuses to install beside $me"
 done
+echo "$me: install, roundtrip and all three conflicts verified"

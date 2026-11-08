@@ -104,3 +104,19 @@ done
 grep -E '^CONFIG_PACKAGE_flashprog' .config
 
 make package/flashprog/compile -j"$(nproc)" V=s 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+
+# The CONFLICTS graph: requesting every variant built into the image (=y)
+# must leave at most one standing. The Kconfig clause the generator emits
+# is "depends on m || (PACKAGE_other != y)", so mutual exclusion bites only
+# at =y; the =m build above is untouched by it and must keep all four.
+# The compile is done, so the .config may be spent on this check.
+for p in flashprog flashprog-external flashprog-pci flashprog-spi; do
+	sed -i "s/^CONFIG_PACKAGE_$p=.*/CONFIG_PACKAGE_$p=y/" .config
+done
+make defconfig > /dev/null
+kept=$(grep -cE '^CONFIG_PACKAGE_flashprog(-external|-pci|-spi)?=y$' .config || true)
+echo "ok      built-in request keeps $kept of the 4 variants"
+if [ "$kept" -gt 1 ]; then
+	echo "FAIL  menuconfig permits $kept variants built in together"
+	exit 1
+fi
