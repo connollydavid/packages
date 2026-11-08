@@ -32,7 +32,7 @@ fi
 
 matched=
 for attempt in 1 2 3; do
-	if ! wget -qO sha256sums "$base/sha256sums"; then
+	if ! wget -q -c -t 3 --waitretry 10 -O sha256sums "$base/sha256sums"; then
 		echo "FAIL  $target has no SDK in $release ($base)"
 		exit 1
 	fi
@@ -42,7 +42,7 @@ for attempt in 1 2 3; do
 		exit 1
 	fi
 	wget -q -c -t 3 --waitretry 10 -O sdk.tar.zst "$base/$sdk"
-	wget -qO sha256sums "$base/sha256sums"
+	wget -q -c -t 3 --waitretry 10 -O sha256sums "$base/sha256sums"
 	want=$(grep " \*\?$sdk\$" sha256sums | awk '{print $1}')
 	got=$(sha256sum sdk.tar.zst | awk '{print $1}')
 	if [ -n "$want" ] && [ "$want" = "$got" ]; then
