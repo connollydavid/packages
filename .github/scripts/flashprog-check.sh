@@ -27,9 +27,9 @@ EXT="buspirate_spi ch341a_spi ch347_spi dediprog developerbox_spi digilent_spi
 	dirtyjtag_spi ft2232_spi ft4222_spi jlink_spi linux_gpio_spi pickit2_spi
 	pony_spi serprog stlinkv3_spi usbblaster_spi"
 PCI_ANY="atavia"
-PCI_RAW="drkaiser gfxmatrox gfxnvidia internal it8212 nicamd nicintel
+PCI_RAW="drkaiser gfxmatrox gfxnvidia internal it8212 nicintel
 	nicintel_eeprom nicintel_spi ogp_spi satasii scsilsi"
-PCI_PORT="atahpt atapromise nic3com nicnatsemi nicrealtek rayer_spi satamv"
+PCI_PORT="atahpt atapromise nic3com nicamd nicnatsemi nicrealtek rayer_spi satamv"
 OFF="mediatek_i2c_spi parade_lspcon raiden_debug_spi realtek_mst_i2c_spi"
 
 case $fam in
