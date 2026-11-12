@@ -26,7 +26,9 @@ validate_udpspeeder_simd_section() {
 		'log_level:integer:4'		\
 		'decode_buf:integer:2000'	\
 		'fix_latency:bool:0'		\
-		'queue_len:integer:200'
+		'queue_len:integer:200'		\
+		'fwmark:uinteger'		\
+		'dscp:range(0,63)'
 }
 
 start_instance() {
@@ -34,7 +36,7 @@ start_instance() {
 	local section="$1"
 
 	local server mode mtu timeout local remote key report disable_obscure fifo interval \
-		fec disable_fec sock_buf queue_len decode_buf log_level fix_latency enabled
+		fec disable_fec sock_buf queue_len decode_buf log_level fix_latency enabled fwmark dscp
 
 	fifo="/tmp/udpspeeder-simd-${section}.fifo"
 
@@ -79,7 +81,9 @@ start_instance() {
 		procd_append_param command --disable-obscure
 	fi
 
-	[ -z "${key}" ]  || procd_append_param command --key "${key}"
+	[ -z "${key}" ]    || procd_append_param command --key "${key}"
+	[ -z "${fwmark}" ] || procd_append_param command --fwmark "${fwmark}"
+	[ -z "${dscp}" ]   || procd_append_param command --dscp "${dscp}"
 
 	procd_append_param command -l "${local}"
 	procd_append_param command -r "${remote}"
