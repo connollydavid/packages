@@ -28,7 +28,8 @@ validate_udpspeeder_simd_section() {
 		'fix_latency:bool:0'		\
 		'queue_len:integer:200'		\
 		'fwmark:uinteger'		\
-		'dscp:range(0,63)'
+		'dscp:range(0,63)'		\
+		'fifo:string'
 }
 
 start_instance() {
@@ -38,13 +39,12 @@ start_instance() {
 	local server mode mtu timeout local remote key report disable_obscure fifo interval \
 		fec disable_fec sock_buf queue_len decode_buf log_level fix_latency enabled fwmark dscp
 
-	fifo="/tmp/udpspeeder-simd-${section}.fifo"
-
 	validate_udpspeeder_simd_section $section || {
 		echo "validation failed"
 		return 1
 	}
 
+	[ -n "${fifo}" ] || fifo="/tmp/udpspeeder-simd-${section}.fifo"
 	if [ "${enabled}" -ne 1 ]
 	then
 		return 1
