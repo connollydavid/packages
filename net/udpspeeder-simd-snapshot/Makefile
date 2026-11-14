@@ -48,7 +48,7 @@ MAKE_FLAGS += cross_cxx gitversion="$(PKG_VERSION)"
 
 define Package/udpspeeder-simd-snapshot/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/speederv2_cross $(1)/usr/bin/udpspeeder-simd
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/udpspeeder-simd_cross $(1)/usr/bin/udpspeeder-simd
 
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/udpspeeder-simd.config $(1)/etc/config/udpspeeder-simd
